@@ -1,0 +1,45 @@
+{% extends "account/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+    <textarea id="chat-log" cols="100" rows="15" ></textarea><br>
+    <input id="chat-message-input" type="text" size="100"><br>
+    <input id="chat-message-submit" type="button" value="Send">
+    <script>
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+        )
+        chatSocket.onmessage = function (e) {
+            var ele = ""
+            const data = JSON.parse(e.data);
+            const chat_log = document.querySelector('#chat-log')
+            if (data.message.sender) {
+                ele = data.message.sender + ": " + data.message.message
+            } else{
+                ele = data.message.message
+            }
+            chat_log.value += (ele + '\n')
+        }
+        chatSocket.onclose = function (e) {
+            console.error('chat socket closed unexpectedly')
+        }
+        document.querySelector('#chat-message-input').focus()
+        document.querySelector('#chat-message-input').onkeyup = function (e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#chat-message-submit').click()
+            }
+        }
+        document.querySelector('#chat-message-submit').onclick = function (e) {
+            const messageInputDOM = document.querySelector('#chat-message-input')
+            const message = messageInputDOM.value
+            if(message !== ""){
+                chatSocket.send(JSON.stringify({
+                    'message': message
+                }))
+                messageInputDOM.value = ''
+            }
+        }
+
+    </script>
+{% endblock content %}

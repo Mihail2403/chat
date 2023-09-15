@@ -1,0 +1,32 @@
+version: '3.9'
+services:
+  django:
+    build: ./my_site
+    command: sh -c "python3 manage.py collectstatic --no-input && daphne -b 0.0.0.0 -p 8000 my_site.asgi:application"
+    volumes:
+      - ./my_site:/my_site
+      - static_data:/my_site/static
+    depends_on:
+      - redis
+    expose:
+      - 8000
+    environment:
+      - CHANNELS_REDIS_HOST=redis
+  nginx:
+    image: nginx:1.17-alpine
+    depends_on:
+      - django
+      - redis
+    ports:
+      - "80:80"
+    volumes:
+      - static_data:/var/www/html/static
+      - ./nginx-conf.d:/etc/nginx/conf.d
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  static_data:
